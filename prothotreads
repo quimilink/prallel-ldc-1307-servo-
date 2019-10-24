@@ -1,0 +1,122 @@
+#include <pt.h>
+#include <Wire.h> 
+#include <Servo.h>
+#include <LiquidCrystal_I2C.h>
+#include <RTClib.h>
+
+
+struct pt hilo1;
+struct pt hilo2;
+struct pt hilo3;
+
+Servo myservo;
+LiquidCrystal_I2C lcd(0x3f,16,2);
+RTC_DS1307 rtc;
+
+
+int pos =0;
+int PINSERVO = 3;
+int PULSOMIN = 475;
+int PULSOMAX = 2450;
+
+
+void setup() {
+  PT_INIT(&hilo1);
+  PT_INIT(&hilo2);
+  PT_INIT(&hilo3);
+
+}
+
+void loop() {
+  parpadeo1(&hilo1);
+  parpadeo2(&hilo2);
+  parpadeo3(&hilo3);
+}
+
+void parpadeo1(struct pt *pt) {
+  PT_BEGIN(pt);
+  //void setup() {
+  static long t = 0;
+  myservo.attach(PINSERVO, PULSOMIN, PULSOMAX);
+  // }
+  
+  do {
+  // void loop() {
+       for (pos = 0; pos <= 180; pos += 10) {
+      myservo.write(pos); // tell servo to go to position in variable 'pos'
+      t=millis();
+      PT_WAIT_WHILE(pt,(millis()-t)<20);
+      }
+      for (pos = 180; pos >= 0; pos -= 10) { // goes from 180 degrees to 0 degrees
+      myservo.write(pos);              // tell servo to go to position in variable 'pos'
+      t=millis();
+      PT_WAIT_WHILE(pt,(millis()-t)<20);                      // waits 15ms for the servo to reach the position
+    }
+  // }
+  } while(true);
+  PT_END(pt);
+}
+
+void parpadeo2(struct pt *pt) {
+  PT_BEGIN(pt);
+  // void setup() {
+  static long t = 0;
+  rtc.begin();
+  lcd.init();
+  lcd.backlight();
+  
+  while(true)  {
+    // Display time centered on the upper line
+  DateTime fecha = rtc.now ();
+  //Dia,mes, año
+  lcd.setCursor(3,0);
+  lcd.print(fecha.day());
+  lcd.setCursor(5,0);
+  lcd.print("/");
+  lcd.setCursor(6,0);
+  lcd.print(fecha.month());
+  lcd.setCursor(8,0);
+  lcd.print("/");
+  lcd.setCursor(9,0);
+  lcd.print(fecha.year());
+
+  //hora,minuto, segundo
+  lcd.setCursor(3,1);
+  lcd.print(fecha.hour());
+  lcd.setCursor(5,1);
+  lcd.print(":");
+  lcd.setCursor(6,1);
+  lcd.print(fecha.minute());
+  lcd.setCursor(8,1);
+  lcd.print(":");
+  lcd.setCursor(9,1);
+  lcd.print(fecha.second());
+  
+  // Wait one second before repeating :)
+  t = millis();
+  PT_WAIT_WHILE(pt,(millis()-t)<1000);
+  lcd.clear();
+  }//while(true);
+  PT_END(pt);
+}
+
+void parpadeo3(struct pt *pt) {
+  PT_BEGIN(pt);
+  // void setup() {
+  static long t = 0;
+  pinMode(13, OUTPUT);
+  // }
+  
+  do {
+  // void loop() {
+    digitalWrite(13, HIGH);
+    t = millis();
+    PT_WAIT_WHILE(pt, (millis()-t)<5000);
+    
+    digitalWrite(13, LOW);
+    t = millis();
+    PT_WAIT_UNTIL(pt, (millis()-t)>=1000);
+  // }
+  } while(true);
+  PT_END(pt);
+}
